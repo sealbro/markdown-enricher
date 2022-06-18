@@ -1,0 +1,96 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "title": "Markdown enricher",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {
+        "/v1/markdown/enrich": {
+            "get": {
+                "description": "Get enriched markdown elements",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "state"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "md file url (https://raw.githubusercontent.com/avelino/awesome-go/main/README.md)",
+                        "name": "md_file_url",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "markdown enriched",
+                        "schema": {
+                            "$ref": "#/definitions/model.MarkdownEnriched"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.GitHubRepoInfo": {
+            "type": "object",
+            "properties": {
+                "created": {
+                    "type": "string"
+                },
+                "forks": {
+                    "type": "integer"
+                },
+                "lastCommit": {
+                    "type": "string"
+                },
+                "modified": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "repo": {
+                    "type": "string"
+                },
+                "stars": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.LinkEnriched": {
+            "type": "object",
+            "properties": {
+                "info": {
+                    "$ref": "#/definitions/model.GitHubRepoInfo"
+                },
+                "repo_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.MarkdownEnriched": {
+            "type": "object",
+            "properties": {
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.LinkEnriched"
+                    }
+                }
+            }
+        }
+    }
+}

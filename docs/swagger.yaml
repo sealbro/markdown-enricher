@@ -1,0 +1,62 @@
+basePath: /api
+definitions:
+  model.GitHubRepoInfo:
+    properties:
+      created:
+        type: string
+      forks:
+        type: integer
+      lastCommit:
+        type: string
+      modified:
+        type: string
+      owner:
+        type: string
+      repo:
+        type: string
+      stars:
+        type: integer
+    type: object
+  model.LinkEnriched:
+    properties:
+      info:
+        $ref: '#/definitions/model.GitHubRepoInfo'
+      repo_url:
+        type: string
+    type: object
+  model.MarkdownEnriched:
+    properties:
+      links:
+        items:
+          $ref: '#/definitions/model.LinkEnriched'
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  title: Markdown enricher
+  version: "1.0"
+paths:
+  /v1/markdown/enrich:
+    get:
+      consumes:
+      - application/json
+      description: Get enriched markdown elements
+      parameters:
+      - description: md file url (https://raw.githubusercontent.com/avelino/awesome-go/main/README.md)
+        in: query
+        name: md_file_url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: markdown enriched
+          schema:
+            $ref: '#/definitions/model.MarkdownEnriched'
+      tags:
+      - state
+schemes:
+- http
+swagger: "2.0"
