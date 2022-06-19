@@ -1,16 +1,15 @@
 package di
 
 import (
-	"context"
 	"go.uber.org/dig"
 	"log"
 	"markdown-enricher/infrastructure/cache"
 	"markdown-enricher/infrastructure/db"
 	"markdown-enricher/infrastructure/metrics"
+	"markdown-enricher/infrastructure/trace"
 	router "markdown-enricher/infrastructure/web"
 	"markdown-enricher/pkg/closer"
 	"markdown-enricher/pkg/env"
-	"markdown-enricher/pkg/graceful"
 	controller "markdown-enricher/usecases/controllers"
 	"markdown-enricher/usecases/interactors"
 	"markdown-enricher/usecases/jobs"
@@ -45,6 +44,11 @@ func Build() *dig.Container {
 	// API
 	provideOrPanic(container, controller.MakeMarkdownController, dig.Group("controller"))
 	provideOrPanic(container, func(group ControllerGroup) []router.Controller { return group.Controllers })
+	provideOrPanic(container, func() *trace.JaegerConfig {
+		// "http://localhost:14268/api/traces"
+		return &trace.JaegerConfig{Url: env.EnvOrDefault("JAERGER_URL", "")}
+	})
+	provideOrPanic(container, trace.MakeTraceProvider)
 	provideOrPanic(container, func() *metrics.PrometheusConfig {
 		return &metrics.PrometheusConfig{Port: env.EnvOrDefault("METRICS_PORT", "2112")}
 	})
@@ -62,28 +66,5 @@ func provideOrPanic(container *dig.Container, constructor interface{}, opts ...d
 	err := container.Provide(constructor, opts...)
 	if err != nil {
 		log.Fatalf("container.Provide: %v", err)
-	}
-}
-
-type App struct {
-	*graceful.Graceful
-}
-
-func MakeApplication(collection *closer.CloserCollection, server router.WebServer, prometheusServer *metrics.PrometheusServer, job *jobs.MdFileEnricherJob) graceful.Application {
-	return &App{
-		Graceful: &graceful.Graceful{
-			StartAction: func() error {
-				go prometheusServer.Start()
-				go job.Start()
-
-				return server.ListenAndServe()
-			},
-			DeferAction: func(ctx context.Context) error {
-				return collection.Close(ctx)
-			},
-			ShutdownAction: func(ctx context.Context) error {
-				return nil
-			},
-		},
 	}
 }

@@ -8,5 +8,6 @@ Simple API for getting short information about repositories in a markdown file
 - Optional environments
   - `SQLITE_CONNECTION`
   - `PG_CONNECTION`
+  - `JAERGER_URL`
   - `PORT`
   - `METRICS_PORT`
