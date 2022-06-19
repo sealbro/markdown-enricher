@@ -4,6 +4,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"gorm.io/plugin/prometheus"
 	"markdown-enricher/pkg/logger"
 )
 
@@ -23,6 +24,16 @@ func MakePostgresConnection(config *PostgresConfig) (*DB, error) {
 			TablePrefix: config.Schema + ".",
 		},
 	})
+
+	open.Use(prometheus.New(prometheus.Config{
+		DBName:          config.Schema,
+		RefreshInterval: 15,
+		//MetricsCollector: []prometheus.MetricsCollector{
+		//	&prometheus.Postgres{
+		//		VariableNames: []string{"Threads_running"},
+		//	},
+		//},
+	}))
 
 	db := &DB{
 		DB: open,

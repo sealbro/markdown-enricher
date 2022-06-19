@@ -8,16 +8,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/expfmt"
 	"markdown-enricher/pkg/logger"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
 
-var defaultMetricPath = "/metrics"
 var defaultSubsystem = "echo"
 
 const (
@@ -122,7 +119,6 @@ type Prometheus struct {
 	Ppg                  PushGateway
 
 	MetricsList []*Metric
-	MetricsPath string
 	Subsystem   string
 	Skipper     middleware.Skipper
 
@@ -164,7 +160,6 @@ func NewPrometheus(subsystem string, skipper middleware.Skipper, customMetricsLi
 
 	p := &Prometheus{
 		MetricsList: metricsList,
-		MetricsPath: defaultMetricPath,
 		Subsystem:   defaultSubsystem,
 		Skipper:     skipper,
 		RequestCounterURLLabelMappingFunc: func(c echo.Context) string {
@@ -178,47 +173,6 @@ func NewPrometheus(subsystem string, skipper middleware.Skipper, customMetricsLi
 	p.registerMetrics(subsystem)
 
 	return p
-}
-
-// SetPushGateway sends metrics to a remote pushgateway exposed on pushGatewayURL
-// every pushInterval. Metrics are fetched from
-func (p *Prometheus) SetPushGateway(pushGatewayURL string, pushInterval time.Duration) {
-	p.Ppg.PushGatewayURL = pushGatewayURL
-	p.Ppg.PushIntervalSeconds = pushInterval
-	p.startPushTicker()
-}
-
-// SetPushGatewayJob job name, defaults to "echo"
-func (p *Prometheus) SetPushGatewayJob(j string) {
-	p.Ppg.Job = j
-}
-
-// SetListenAddress for exposing metrics on address. If not set, it will be exposed at the
-// same address of the echo engine that is being used
-// func (p *Prometheus) SetListenAddress(address string) {
-// 	p.listenAddress = address
-// 	if p.listenAddress != "" {
-// 		p.router = echo.Echo().Router()
-// 	}
-// }
-
-// SetListenAddressWithRouter for using a separate router to expose metrics. (this keeps things like GET /metrics out of
-// your content's access log).
-// func (p *Prometheus) SetListenAddressWithRouter(listenAddress string, r *echo.Echo) {
-// 	p.listenAddress = listenAddress
-// 	if len(p.listenAddress) > 0 {
-// 		p.router = r
-// 	}
-// }
-
-// SetMetricsPath set metrics paths
-func (p *Prometheus) SetMetricsPath(e *echo.Echo) {
-	if p.listenAddress != "" {
-		p.router.GET(p.MetricsPath, prometheusHandler())
-		p.runServer()
-	} else {
-		e.GET(p.MetricsPath, prometheusHandler())
-	}
 }
 
 func (p *Prometheus) runServer() {
@@ -235,35 +189,6 @@ func (p *Prometheus) getMetrics() []byte {
 
 	}
 	return out.Bytes()
-}
-
-func (p *Prometheus) getPushGatewayURL() string {
-	h, _ := os.Hostname()
-	if p.Ppg.Job == "" {
-		p.Ppg.Job = "echo"
-	}
-	return p.Ppg.PushGatewayURL + "/metrics/job/" + p.Ppg.Job + "/instance/" + h
-}
-
-func (p *Prometheus) sendMetricsToPushGateway(metrics []byte) {
-	req, err := http.NewRequest("POST", p.getPushGatewayURL(), bytes.NewBuffer(metrics))
-	if err != nil {
-		logger.Errorf("failed to create push gateway request: %v", err)
-		return
-	}
-	client := &http.Client{}
-	if _, err = client.Do(req); err != nil {
-		logger.Errorf("Error sending to push gateway: %v", err)
-	}
-}
-
-func (p *Prometheus) startPushTicker() {
-	ticker := time.NewTicker(time.Second * p.Ppg.PushIntervalSeconds)
-	go func() {
-		for range ticker.C {
-			p.sendMetricsToPushGateway(p.getMetrics())
-		}
-	}()
 }
 
 // NewMetric associates prometheus.Collector based on Metric.Type
@@ -368,15 +293,11 @@ func (p *Prometheus) registerMetrics(subsystem string) {
 // Use adds the middleware to the Echo engine.
 func (p *Prometheus) Use(e *echo.Echo) {
 	e.Use(p.HandlerFunc)
-	p.SetMetricsPath(e)
 }
 
 // HandlerFunc defines handler function for middleware
 func (p *Prometheus) HandlerFunc(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		if c.Path() == p.MetricsPath {
-			return next(c)
-		}
 		if p.Skipper(c) {
 			return next(c)
 		}
@@ -417,14 +338,6 @@ func (p *Prometheus) HandlerFunc(next echo.HandlerFunc) echo.HandlerFunc {
 		p.resSz.WithLabelValues(statusStr, c.Request().Method, url).Observe(resSz)
 
 		return err
-	}
-}
-
-func prometheusHandler() echo.HandlerFunc {
-	h := promhttp.Handler()
-	return func(c echo.Context) error {
-		h.ServeHTTP(c.Response(), c.Request())
-		return nil
 	}
 }
 

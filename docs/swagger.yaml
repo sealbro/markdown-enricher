@@ -2,13 +2,9 @@ basePath: /api
 definitions:
   model.GitHubRepoInfo:
     properties:
-      created:
-        type: string
       forks:
         type: integer
       lastCommit:
-        type: string
-      modified:
         type: string
       owner:
         type: string

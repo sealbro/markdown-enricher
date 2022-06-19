@@ -8,30 +8,33 @@ import (
 	"markdown-enricher/domain/model"
 	"markdown-enricher/infrastructure/db"
 	"markdown-enricher/interfaces/repository"
+	"time"
 )
 
-type SqlLinkStorageRepository struct {
+type SqlLinkRepository struct {
 	db *db.DB
 }
 
-func MakeSqlStorageRepository(db *db.DB) repository.LinkStorageRepository {
-	db.AutoMigrate(&model.GitHubRepoInfo{})
-	return &SqlLinkStorageRepository{
+func MakeSqlLinkRepository(db *db.DB) (repository.LinkRepository, error) {
+	err := db.AutoMigrate(&model.GitHubRepoInfo{})
+	return &SqlLinkRepository{
 		db: db,
-	}
+	}, err
 }
 
-func (r *SqlLinkStorageRepository) Get(ctx context.Context, owner, repo string) (*model.GitHubRepoInfo, error) {
-	state := &model.GitHubRepoInfo{}
-	last := r.db.WithContext(ctx).Last(state, "owner = ? and repo = ?", owner, repo)
+func (r *SqlLinkRepository) Get(ctx context.Context, owner, repo string) (*model.GitHubRepoInfo, error) {
+	dbModel := &model.GitHubRepoInfo{}
+	last := r.db.WithContext(ctx).Last(dbModel, "owner = ? and repo = ?", owner, repo)
 	if errors.Is(last.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 
-	return state, last.Error
+	return dbModel, last.Error
 }
 
-func (r *SqlLinkStorageRepository) Upsert(ctx context.Context, repoInfo *model.GitHubRepoInfo) error {
+func (r *SqlLinkRepository) Upsert(ctx context.Context, repoInfo *model.GitHubRepoInfo) error {
+	repoInfo.Modified = time.Now()
+
 	columns := []string{"modified", "stars", "forks", "last_commit"}
 
 	tx := r.db.WithContext(ctx).Clauses(clause.OnConflict{

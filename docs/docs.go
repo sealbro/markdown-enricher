@@ -52,16 +52,10 @@ const docTemplate = `{
         "model.GitHubRepoInfo": {
             "type": "object",
             "properties": {
-                "created": {
-                    "type": "string"
-                },
                 "forks": {
                     "type": "integer"
                 },
                 "lastCommit": {
-                    "type": "string"
-                },
-                "modified": {
                     "type": "string"
                 },
                 "owner": {

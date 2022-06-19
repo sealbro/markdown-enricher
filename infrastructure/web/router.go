@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"markdown-enricher/infrastructure/metrics"
 	"markdown-enricher/pkg/logger"
 )
 
@@ -21,24 +22,36 @@ type Route struct {
 	Handler echo.HandlerFunc
 }
 
+type WebServerConfig struct {
+	Port       string
+	PathPrefix string
+}
+
 type EchoWebServer struct {
 	echo      *echo.Echo
 	port      string
 	apiPrefix string
 }
 
-func MakeEchoWebServer(controllers []Controller) WebServer {
+func MakeEchoWebServer(config *WebServerConfig, controllers []Controller) WebServer {
 	server := &EchoWebServer{
 		echo:      echo.New(),
-		port:      "8080",
-		apiPrefix: "/api",
+		port:      config.Port,
+		apiPrefix: config.PathPrefix,
 	}
 
+	// Metrics
+	p := metrics.NewPrometheus("echo", nil)
+	p.Use(server.echo)
+
+	// Swagger
 	server.echo.GET("/swagger/*", echoSwagger.WrapHandler)
 
+	// Other middlewares
 	server.echo.Use(middleware.LoggerWithConfig(logger.EchoLoggerConfig))
 	server.echo.Use(middleware.Recover())
 
+	// Register routes
 	for _, c := range controllers {
 		c.RegisterRoutes(server.echo.Group(server.apiPrefix))
 	}

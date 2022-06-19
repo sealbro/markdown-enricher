@@ -2,58 +2,138 @@ package interactors
 
 import (
 	"context"
+	"errors"
 	"markdown-enricher/domain/model"
 	"markdown-enricher/infrastructure/cache"
 	"markdown-enricher/interfaces/repository"
+	"markdown-enricher/pkg/closer"
+	"markdown-enricher/pkg/logger"
 	"markdown-enricher/usecases/parsers"
 	"markdown-enricher/usecases/services"
 	"strings"
 	"time"
 )
 
-type EnricherInteractor struct {
-	parser                *parsers.MarkdownParser
-	linkStorageRepository repository.LinkStorageRepository
-	mdFileCache           *cache.TypedCache[*model.MarkdownEnriched]
-	repoCache             *cache.TypedCache[*model.GitHubRepoInfo]
-	gitHubService         *services.GitHubService
+type FilesToProcessQueue chan *model.MdFile
+
+func MakeFilesToProcessQueue() FilesToProcessQueue {
+	return make(FilesToProcessQueue, 10)
 }
 
-func MakeEnricherInteractor(parser *parsers.MarkdownParser, linkStorageRepository repository.LinkStorageRepository, cacheService cache.CacheService, gitHubService *services.GitHubService) *EnricherInteractor {
-	mdFileCache := cache.NewTypedCache[*model.MarkdownEnriched](cacheService, "markdown_file=>")
-	repoCache := cache.NewTypedCache[*model.GitHubRepoInfo](cacheService, "github_repo=>")
+func (q FilesToProcessQueue) Close(context.Context) error {
+	close(q)
 
-	return &EnricherInteractor{
-		mdFileCache:           mdFileCache,
-		repoCache:             repoCache,
-		parser:                parser,
-		linkStorageRepository: linkStorageRepository,
-		gitHubService:         gitHubService,
+	return nil
+}
+
+type EnricherInteractor struct {
+	closed              bool
+	parser              *parsers.MarkdownParser
+	linkRepository      repository.LinkRepository
+	mdFileCache         *cache.TypedCache[*model.MarkdownEnriched]
+	repoCache           *cache.TypedCache[*model.GitHubRepoInfo]
+	gitHubService       *services.GitHubService
+	fileRepository      repository.MdFileRepository
+	FilesToProcessQueue FilesToProcessQueue
+}
+
+const (
+	mdFileCacheDuration  = 24 * time.Hour
+	repoCacheDuration    = 2 * 24 * time.Hour
+	timeOutMdFileProcess = 10
+	timeOutLastRepoInfo  = 24
+)
+
+func MakeEnricherInteractor(collection *closer.CloserCollection, parser *parsers.MarkdownParser, linkStorageRepository repository.LinkRepository, cacheService cache.CacheService, gitHubService *services.GitHubService, fileRepository repository.MdFileRepository, queue FilesToProcessQueue) *EnricherInteractor {
+	mdFileCache := cache.NewTypedCache[*model.MarkdownEnriched](cacheService, "markdown_file")
+	repoCache := cache.NewTypedCache[*model.GitHubRepoInfo](cacheService, "github_repo")
+
+	inretactor := &EnricherInteractor{
+		mdFileCache:         mdFileCache,
+		repoCache:           repoCache,
+		parser:              parser,
+		linkRepository:      linkStorageRepository,
+		fileRepository:      fileRepository,
+		gitHubService:       gitHubService,
+		FilesToProcessQueue: queue,
 	}
+
+	collection.Add(inretactor)
+
+	return inretactor
+}
+
+func (ei *EnricherInteractor) Close(context.Context) error {
+	ei.closed = true
+	close(ei.FilesToProcessQueue)
+
+	return nil
 }
 
 func (ei *EnricherInteractor) Markdown(ctx context.Context, mdFileUrl string) (*model.MarkdownEnriched, error) {
-	enriched, err := ei.mdFileCache.GetOrSet(mdFileUrl, func() (*model.MarkdownEnriched, error) {
-		linkUrls, err := ei.parser.ExtractLinksFromRemoteFile(ctx, mdFileUrl)
-		if err != err {
-			return nil, err
+	return ei.mdFileCache.GetOrSet(mdFileUrl, func() (*model.MarkdownEnriched, error) {
+		mdFile, err := ei.fileRepository.Get(ctx, mdFileUrl)
+		if err != nil || ei.closed {
+			return model.EmptyMarkdownEnriched, err
 		}
 
-		links := make([]*model.LinkEnriched, len(linkUrls))
-		for _, repoUrl := range linkUrls {
-			repoInfo, err := ei.repoCache.GetOrSet(repoUrl, ei.getFromStorageOrApi(ctx, repoUrl), 24*time.Hour)
-			if err != nil {
-				continue
-			} else {
-				links = append(links, &model.LinkEnriched{
-					Url:  repoUrl,
-					Info: repoInfo,
-				})
+		if mdFile == nil || mdFile.Status != model.Process || time.Now().Sub(mdFile.Modified).Minutes() > timeOutMdFileProcess {
+			mdFile = &model.MdFile{
+				Created:  time.Now(),
+				Modified: time.Now(),
+				Url:      mdFileUrl,
+				Status:   model.Ready,
 			}
+			err = ei.fileRepository.Upsert(ctx, mdFile)
+
+			go func() { ei.FilesToProcessQueue <- mdFile }()
 		}
 
-		return &model.MarkdownEnriched{Links: nil}, nil
-	}, 3*24*time.Hour)
+		return model.EmptyMarkdownEnriched, err
+	}, mdFileCacheDuration)
+}
+
+func (ei *EnricherInteractor) ForceMarkdown(ctx context.Context, mdFile *model.MdFile) (*model.MarkdownEnriched, error) {
+	mdFile.Status = model.Process
+	err := ei.fileRepository.Upsert(ctx, mdFile)
+	if err != nil {
+		return nil, err
+	}
+
+	mdFileUrl := mdFile.Url
+	logger.Tracef("Start process %v", mdFileUrl)
+	linkUrls, err := ei.parser.ExtractLinksFromRemoteFile(ctx, mdFileUrl)
+	if err != err {
+		return nil, err
+	}
+
+	var links []*model.LinkEnriched
+	for _, repoUrl := range linkUrls {
+		repoInfo, err := ei.repoCache.GetOrSet(repoUrl, ei.getFromStorageOrApi(ctx, repoUrl), repoCacheDuration)
+		if err != nil {
+			logger.Warnf("error for [%v]: %v", repoUrl, err.Error())
+			continue
+		} else {
+			links = append(links, &model.LinkEnriched{
+				//Url:  repoUrl,
+				Info: repoInfo,
+			})
+		}
+	}
+
+	enriched := &model.MarkdownEnriched{Links: links}
+
+	err = ei.mdFileCache.Set(mdFileUrl, enriched, mdFileCacheDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Tracef("Finish process %v", mdFileUrl)
+	mdFile.Status = model.Done
+	err = ei.fileRepository.Upsert(ctx, mdFile)
+	if err != nil {
+		return nil, err
+	}
 
 	return enriched, err
 }
@@ -62,23 +142,33 @@ func (ei *EnricherInteractor) getFromStorageOrApi(ctx context.Context, repoUrl s
 	return func() (*model.GitHubRepoInfo, error) {
 		var err error
 
-		owner, repo := splitUrl(repoUrl)
-		repoInfo, _ := ei.linkStorageRepository.Get(ctx, owner, repo)
-		if repoInfo == nil || time.Now().Sub(repoInfo.Modified).Hours() > 24 {
+		owner, repo, err := splitUrl(repoUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		repoInfo, _ := ei.linkRepository.Get(ctx, owner, repo)
+		if repoInfo == nil || time.Now().Sub(repoInfo.Modified).Hours() > timeOutLastRepoInfo {
 			repoInfo, err = ei.gitHubService.GetRepoInfo(ctx, owner, repo)
 			if err != nil {
 				return nil, err
 			}
 
-			err = ei.linkStorageRepository.Upsert(ctx, repoInfo)
+			err = ei.linkRepository.Upsert(ctx, repoInfo)
 		}
+
+		logger.Tracef("Got github info for %v/%v", owner, repo)
 
 		return repoInfo, err
 	}
 }
 
-func splitUrl(url string) (owner string, repo string) {
+func splitUrl(url string) (owner string, repo string, err error) {
 	fields := strings.Split(url, "/")
 
-	return fields[len(fields)-2], fields[len(fields)-1]
+	if len(fields) < 2 {
+		return "", "", errors.New("fail after split repo url")
+	}
+
+	return fields[0], fields[1], nil
 }

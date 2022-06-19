@@ -3,11 +3,11 @@ package model
 import "time"
 
 type GitHubRepoInfo struct {
-	Created    time.Time
-	Modified   time.Time
-	Owner      string `gorm:"primaryKey"`
-	Repo       string `gorm:"primaryKey"`
-	Stars      int
-	Forks      int
-	LastCommit time.Time
+	Created    time.Time `json:"-"`
+	Modified   time.Time `json:"-"`
+	Owner      string    `json:"o" gorm:"primaryKey"`
+	Repo       string    `json:"r" gorm:"primaryKey"`
+	Stars      int       `json:"s"`
+	Forks      int       `json:"f"`
+	LastCommit time.Time `json:"lc"`
 }
