@@ -77,5 +77,9 @@ func (p *JaegerTracerProvider) Shutdown(ctx context.Context) error {
 }
 
 func (p *JaegerTracerProvider) Tracer(name string) trace.Tracer {
+	if p.TracerProvider == nil {
+		return stubEmptyTracer
+	}
+
 	return p.TracerProvider.Tracer(name)
 }
