@@ -9,13 +9,14 @@ require (
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/common v0.32.1
 	github.com/swaggo/echo-swagger v1.3.3
-	github.com/swaggo/swag v1.8.1
+	github.com/swaggo/swag v1.8.3
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.1.14
 	github.com/yuin/goldmark v1.4.12
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.32.0
 	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.7.0
 	go.opentelemetry.io/otel/sdk v1.7.0
+	go.opentelemetry.io/otel/trace v1.7.0
 	go.uber.org/dig v1.14.1
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	gorm.io/driver/postgres v1.3.7
@@ -64,7 +65,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
-	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
