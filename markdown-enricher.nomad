@@ -30,9 +30,6 @@ job "markdown-enricher" {
         to = 8080
         host_network = "private"
       }
-    }
-
-    network {
       port "metrics-http" {
         to = 2112
         host_network = "private"
@@ -90,29 +87,13 @@ job "markdown-enricher" {
       driver = "docker"
 
       config {
-        image = "sealbro/markdown-enricher"
+        image = "sealbro/markdown-enricher:0.0.2"
         force_pull = true
 
         ports = ["app-http", "metrics-http"]
 
         labels {
           from_nomad = "yes"
-        }
-
-        logging {
-          type = "loki"
-          config {
-            loki-pipeline-stages = <<EOH
-- static_labels:
-    app: markdown-enricher
-- json:
-    expressions:
-      time: ts_orig
-- timestamp:
-    source: time
-    format: RFC3339
-EOH
-          }
         }
       }
 
@@ -131,8 +112,8 @@ EOH
       }
 
       resources {
-        cpu    = 100
-        memory = 32
+        cpu    = 300
+        memory = 128
       }
     }
   }

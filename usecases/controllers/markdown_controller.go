@@ -5,6 +5,7 @@ import (
 	router "markdown-enricher/infrastructure/web"
 	"markdown-enricher/usecases/interactors"
 	"net/http"
+	"strings"
 )
 
 type MarkdownController struct {
@@ -20,23 +21,8 @@ func MakeMarkdownController(enricherInteractor *interactors.EnricherInteractor) 
 func (c *MarkdownController) RegisterRoutes(e *echo.Group) {
 	group := e.Group("/v1/markdown")
 
-	//group.POST("/complete", c.completeHandler)
 	group.GET("/enrich", c.enrichHandler)
-
 }
-
-//// Set Complete state
-//// @Tags state
-//// @Accept json
-//// @Produce json
-//// @Description Check and set Complete state
-//// @Success 200
-//// @Router /v1/state/complete [post]
-//func (c *MarkdownController) completeHandler(e echo.Context) error {
-//	ctx := e.Request().Context()
-//
-//	return c.photosInteractor.Complete(ctx)
-//}
 
 // Get enriched markdown elements
 // @Tags state
@@ -48,7 +34,7 @@ func (c *MarkdownController) RegisterRoutes(e *echo.Group) {
 // @Router /v1/markdown/enrich [get]
 func (c *MarkdownController) enrichHandler(e echo.Context) error {
 	ctx := e.Request().Context()
-	mdFileUrl := e.QueryParam("md_file_url")
+	mdFileUrl := strings.TrimSpace(e.QueryParam("md_file_url"))
 
 	markdown, err := c.enricherInteractor.Markdown(ctx, mdFileUrl)
 	if err != nil {

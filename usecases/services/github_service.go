@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/go-github/v45/github"
 	"markdown-enricher/domain/model"
 	"os"
@@ -13,17 +14,31 @@ type GitHubService struct {
 	client *github.Client
 }
 
-func MakeGitHubService() *GitHubService {
+func MakeGitHubService() (*GitHubService, error) {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
 	)
-	tc := oauth2.NewClient(context.Background(), ts)
+	background := context.Background()
+	tc := oauth2.NewClient(background, ts)
 
 	client := github.NewClient(tc)
 
+	err := checkToken(background, client)
+
 	return &GitHubService{
 		client: client,
+	}, err
+}
+
+func checkToken(background context.Context, client *github.Client) error {
+	ctx, cancelFunc := context.WithTimeout(background, time.Second)
+	defer cancelFunc()
+	_, _, err := client.Activity.IsStarred(ctx, "avelino", "awesome-go")
+	if err != nil {
+		return fmt.Errorf("wrong GITHUB_TOKEN: %w", err)
 	}
+
+	return nil
 }
 
 func (s *GitHubService) GetRepoInfo(ctx context.Context, owner, repo string) (*model.GitHubRepoInfo, error) {

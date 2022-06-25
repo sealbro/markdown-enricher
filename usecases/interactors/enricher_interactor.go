@@ -101,14 +101,25 @@ func (ei *EnricherInteractor) ForceMarkdown(ctx context.Context, mdFile *model.M
 	}
 
 	mdFileUrl := mdFile.Url
-	logger.Tracef("Start process %v", mdFileUrl)
+
+	defer func() {
+		logger.Infof("ForceMarkdown finish: %v", mdFileUrl)
+		mdFile.Status = model.Done
+		err = ei.fileRepository.Upsert(ctx, mdFile)
+		if err != nil {
+			logger.Errorf("ForceMarkdown error: %v", err.Error())
+		}
+	}()
+
+	logger.Infof("ForceMarkdown start: %v", mdFileUrl)
 	linkUrls, err := ei.parser.ExtractLinksFromRemoteFile(ctx, mdFileUrl)
-	if err != err {
+	if err != nil {
 		return nil, err
 	}
 
-	var links []*model.LinkEnriched
-	for _, repoUrl := range linkUrls {
+	links := make([]*model.LinkEnriched, 0)
+	countUrls := len(linkUrls)
+	for i, repoUrl := range linkUrls {
 		repoInfo, err := ei.repoCache.GetOrSet(repoUrl, ei.getFromStorageOrApi(ctx, repoUrl), repoCacheDuration)
 		if err != nil {
 			logger.Warnf("error for [%v]: %v", repoUrl, err.Error())
@@ -119,18 +130,16 @@ func (ei *EnricherInteractor) ForceMarkdown(ctx context.Context, mdFile *model.M
 				Info: repoInfo,
 			})
 		}
+
+		// every 10% logging process
+		if (i+1)%int(float32(countUrls)*0.1) == 0 {
+			logger.Infof("ForceMarkdown processed: [%v/%v] for %v", i, countUrls, mdFileUrl)
+		}
 	}
 
 	enriched := &model.MarkdownEnriched{Links: links}
 
 	err = ei.mdFileCache.Set(mdFileUrl, enriched, mdFileCacheDuration)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Tracef("Finish process %v", mdFileUrl)
-	mdFile.Status = model.Done
-	err = ei.fileRepository.Upsert(ctx, mdFile)
 	if err != nil {
 		return nil, err
 	}
