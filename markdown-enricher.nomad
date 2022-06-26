@@ -87,7 +87,7 @@ job "markdown-enricher" {
       driver = "docker"
 
       config {
-        image = "sealbro/markdown-enricher:0.0.3"
+        image = "sealbro/markdown-enricher:0.0.4"
         force_pull = true
 
         ports = ["app-http", "metrics-http"]
@@ -95,11 +95,28 @@ job "markdown-enricher" {
         labels {
           from_nomad = "yes"
         }
+
+        logging {
+          type = "loki"
+          config {
+            loki-pipeline-stages = <<EOH
+- static_labels:
+    app: markdown-enricher
+- json:
+    expressions:
+      time: ts_orig
+- timestamp:
+    source: time
+    format: RFC3339
+EOH
+          }
+        }
       }
 
       template {
         data = <<EOH
-JAERGER_URL=http://192.168.42.64:14268/api/traces
+LOG_LEVEL=TRACE
+OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger.service.consul
 GITHUB_TOKEN={{with secret "applications/prod/markdown-enricher"}}{{.Data.data.GITHUB_TOKEN}}{{end}}
 EOH
 
