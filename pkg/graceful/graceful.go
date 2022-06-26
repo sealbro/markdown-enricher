@@ -29,10 +29,10 @@ func (graceful *Graceful) RunAndWait() {
 			logger.Fatalf("listen: %s\n", err)
 		}
 	}()
-	logger.Info("Server Started")
+	logger.Infof("Server Started")
 
 	<-done
-	logger.Info("Server Stopped")
+	logger.Infof("Server Stopped")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer func() {
@@ -45,5 +45,5 @@ func (graceful *Graceful) RunAndWait() {
 	if err := graceful.ShutdownAction(ctx); err != nil {
 		logger.Errorf("Server Shutdown Failed:%+v", err)
 	}
-	logger.Info("Server Exited Properly")
+	logger.Infof("Server Exited Properly")
 }

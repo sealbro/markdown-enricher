@@ -15,17 +15,17 @@ func (l *GormLogger) LogMode(logLevel logger.LogLevel) logger.Interface {
 	return l
 }
 
-func (l *GormLogger) Info(_ context.Context, message string, values ...interface{}) {
-	Infof(message, values)
+func (l *GormLogger) Info(ctx context.Context, message string, values ...interface{}) {
+	Info(ctx, message, values)
 }
-func (l *GormLogger) Warn(_ context.Context, message string, values ...interface{}) {
-	Warnf(message, values)
+func (l *GormLogger) Warn(ctx context.Context, message string, values ...interface{}) {
+	Warn(ctx, message, values)
 }
-func (l *GormLogger) Error(_ context.Context, message string, values ...interface{}) {
-	Errorf(message, values)
+func (l *GormLogger) Error(ctx context.Context, message string, values ...interface{}) {
+	Error(ctx, message, values)
 }
-func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+func (l *GormLogger) Trace(ctx context.Context, _ time.Time, fc func() (sql string, rowsAffected int64), _ error) {
 	sql, rows := fc()
 
-	Tracef("ROWS: %v, SQL: %v", rows, sql)
+	Trace(ctx, "ROWS: %v, SQL: %v", rows, sql)
 }

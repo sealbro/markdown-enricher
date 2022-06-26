@@ -87,7 +87,7 @@ job "markdown-enricher" {
       driver = "docker"
 
       config {
-        image = "sealbro/markdown-enricher:0.0.2"
+        image = "sealbro/markdown-enricher:0.0.3"
         force_pull = true
 
         ports = ["app-http", "metrics-http"]
@@ -99,6 +99,7 @@ job "markdown-enricher" {
 
       template {
         data = <<EOH
+JAERGER_URL=http://192.168.42.64:14268/api/traces
 GITHUB_TOKEN={{with secret "applications/prod/markdown-enricher"}}{{.Data.data.GITHUB_TOKEN}}{{end}}
 EOH
 

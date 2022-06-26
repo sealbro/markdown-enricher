@@ -21,57 +21,35 @@ var logLevel = os.Getenv("LOG_LEVEL")
 
 func Tracef(format string, v ...interface{}) {
 	if logLevel == TRACE {
-		Printf(TRACE, format, v...)
-	}
-}
-func Trace(message string) {
-	if logLevel == TRACE {
-		Printf(TRACE, message)
+		printf(TRACE, format, v...)
 	}
 }
 
 func Infof(format string, v ...interface{}) {
-	Printf(INFO, format, v...)
-}
-func Info(message string) {
-	Printf(INFO, message)
+	printf(INFO, format, v...)
 }
 
 func Warnf(format string, v ...interface{}) {
-	Printf(WARN, format, v...)
-}
-func Warn(message string) {
-	Printf(WARN, message)
+	printf(WARN, format, v...)
 }
 
 func Errorf(format string, v ...interface{}) {
-	Printf(ERROR, format, v...)
-}
-func Error(message string) {
-	Printf(ERROR, message)
+	printf(ERROR, format, v...)
 }
 
 func Fatalf(format string, v ...interface{}) {
-	Printf(FATAL, format, v...)
+	printf(FATAL, format, v...)
 
 	panic(fmt.Errorf(format, v))
 }
 
-func Fatal(message string) {
-	Printf(FATAL, message)
+func printf(level string, format string, v ...interface{}) {
+	event := createEvent(level, format, v)
 
-	panic(fmt.Errorf(message))
+	sendToStdout(event)
 }
 
-func Printf(level string, format string, v ...interface{}) {
-	event := &LogEvent{
-		Source:    getSource(2),
-		Level:     level,
-		Timestamp: time.Now().Format(time.RFC3339),
-		Message:   fmt.Sprintf(format, v...),
-		Hash:      calculateHash(format),
-	}
-
+func sendToStdout(event *LogEvent) {
 	jsonText, err := json.Marshal(event)
 	if err != nil {
 		panic(err)
@@ -79,7 +57,7 @@ func Printf(level string, format string, v ...interface{}) {
 
 	dest := os.Stdout
 
-	if level == ERROR || level == FATAL {
+	if event.Level == ERROR || event.Level == FATAL {
 		dest = os.Stderr
 	}
 
@@ -90,8 +68,18 @@ func Printf(level string, format string, v ...interface{}) {
 		panic(err)
 	}
 
-	if level == FATAL {
+	if event.Level == FATAL {
 		os.Exit(1)
+	}
+}
+
+func createEvent(level string, format string, v []interface{}) *LogEvent {
+	return &LogEvent{
+		Source:    getSource(2),
+		Level:     level,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Message:   fmt.Sprintf(format, v...),
+		Hash:      calculateHash(format),
 	}
 }
 

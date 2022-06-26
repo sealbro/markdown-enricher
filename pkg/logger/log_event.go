@@ -6,4 +6,5 @@ type LogEvent struct {
 	Source    string `json:"source"`
 	Message   string `json:"message"`
 	Hash      string `json:"hash"`
+	TraceId   string `json:"trace_id,omitempty"`
 }

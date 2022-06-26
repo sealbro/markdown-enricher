@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/otel/trace"
 	"markdown-enricher/infrastructure/metrics"
 	"markdown-enricher/pkg/logger"
 )
@@ -51,6 +52,7 @@ func MakeEchoWebServer(config *WebServerConfig, controllers []Controller) WebSer
 	// Other middlewares
 	serviceName := "markdown-enricher"
 	server.echo.Use(otelecho.Middleware(serviceName))
+	server.echo.Use(tracingEnrichMiddleware())
 	server.echo.Use(middleware.LoggerWithConfig(logger.EchoLoggerConfig))
 	server.echo.Use(middleware.Recover())
 
@@ -60,6 +62,27 @@ func MakeEchoWebServer(config *WebServerConfig, controllers []Controller) WebSer
 	}
 
 	return server
+}
+
+func tracingEnrichMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			const headerName = "trace-id"
+
+			request := c.Request()
+			externalTraceId := request.Header.Get(headerName)
+			if externalTraceId == "" {
+				ctx := request.Context()
+				traceID := trace.SpanFromContext(ctx).SpanContext().TraceID()
+				if traceID.IsValid() {
+					request.Header.Set(headerName, traceID.String())
+					c.SetRequest(request)
+				}
+			}
+
+			return next(c)
+		}
+	}
 }
 
 func (server *EchoWebServer) ListenAndServe() error {

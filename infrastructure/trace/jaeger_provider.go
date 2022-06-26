@@ -23,7 +23,7 @@ var (
 )
 
 type JaegerConfig struct {
-	Url string
+	AgentHost string
 }
 
 type TracerProvider interface {
@@ -40,12 +40,12 @@ type JaegerTracerProvider struct {
 // TracerProvider will also use a Resource configured with all the information
 // about the application.
 func MakeTraceProvider(config *JaegerConfig) (TracerProvider, error) {
-	if config.Url == "" {
+	if config.AgentHost == "" {
 		return &JaegerTracerProvider{}, nil
 	}
 
 	// Create the Jaeger exporter
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.Url)))
+	exp, err := jaeger.New(jaeger.WithAgentEndpoint())
 	if err != nil {
 		return nil, err
 	}

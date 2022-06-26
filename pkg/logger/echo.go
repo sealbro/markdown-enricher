@@ -6,7 +6,7 @@ import (
 
 var EchoLoggerConfig = middleware.LoggerConfig{
 	Skipper: middleware.DefaultSkipper,
-	Format: `{"ts_orig":"${time_rfc3339}", "level":"DEBUG", "remote_ip":"${remote_ip}",` +
+	Format: `{"ts_orig":"${time_rfc3339}", "level":"DEBUG", "trace_id":"${header:trace-id}", "remote_ip":"${remote_ip}",` +
 		`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
 		`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
 		`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",

@@ -46,7 +46,7 @@ func Build() *dig.Container {
 	provideOrPanic(container, func(group ControllerGroup) []router.Controller { return group.Controllers })
 	provideOrPanic(container, func() *trace.JaegerConfig {
 		// "http://localhost:14268/api/traces"
-		return &trace.JaegerConfig{Url: env.EnvOrDefault("JAERGER_URL", "")}
+		return &trace.JaegerConfig{AgentHost: env.EnvOrDefault("OTEL_EXPORTER_JAEGER_AGENT_HOST", "")}
 	})
 	provideOrPanic(container, trace.MakeTraceProvider)
 	provideOrPanic(container, func() *metrics.PrometheusConfig {
