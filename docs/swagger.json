@@ -9,7 +9,7 @@
         "version": "1.0"
     },
     "host": "localhost:8080",
-    "basePath": "/api",
+    "basePath": "/markdown-enricher/api",
     "paths": {
         "/v1/markdown/enrich": {
             "get": {
@@ -47,19 +47,19 @@
         "model.GitHubRepoInfo": {
             "type": "object",
             "properties": {
-                "forks": {
+                "f": {
                     "type": "integer"
                 },
-                "lastCommit": {
+                "lc": {
                     "type": "string"
                 },
-                "owner": {
+                "o": {
                     "type": "string"
                 },
-                "repo": {
+                "r": {
                     "type": "string"
                 },
-                "stars": {
+                "s": {
                     "type": "integer"
                 }
             }
@@ -67,11 +67,9 @@
         "model.LinkEnriched": {
             "type": "object",
             "properties": {
-                "info": {
+                "i": {
+                    "description": "Url  string          `json:\"url\"`",
                     "$ref": "#/definitions/model.GitHubRepoInfo"
-                },
-                "repo_url": {
-                    "type": "string"
                 }
             }
         },

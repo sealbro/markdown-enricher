@@ -52,19 +52,19 @@ const docTemplate = `{
         "model.GitHubRepoInfo": {
             "type": "object",
             "properties": {
-                "forks": {
+                "f": {
                     "type": "integer"
                 },
-                "lastCommit": {
+                "lc": {
                     "type": "string"
                 },
-                "owner": {
+                "o": {
                     "type": "string"
                 },
-                "repo": {
+                "r": {
                     "type": "string"
                 },
-                "stars": {
+                "s": {
                     "type": "integer"
                 }
             }
@@ -72,11 +72,9 @@ const docTemplate = `{
         "model.LinkEnriched": {
             "type": "object",
             "properties": {
-                "info": {
+                "i": {
+                    "description": "Url  string          ` + "`" + `json:\"url\"` + "`" + `",
                     "$ref": "#/definitions/model.GitHubRepoInfo"
-                },
-                "repo_url": {
-                    "type": "string"
                 }
             }
         },
@@ -98,7 +96,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/api",
+	BasePath:         "/markdown-enricher/api",
 	Schemes:          []string{"http"},
 	Title:            "Markdown enricher",
 	Description:      "",

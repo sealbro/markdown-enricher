@@ -1,24 +1,23 @@
-basePath: /api
+basePath: /markdown-enricher/api
 definitions:
   model.GitHubRepoInfo:
     properties:
-      forks:
+      f:
         type: integer
-      lastCommit:
+      lc:
         type: string
-      owner:
+      o:
         type: string
-      repo:
+      r:
         type: string
-      stars:
+      s:
         type: integer
     type: object
   model.LinkEnriched:
     properties:
-      info:
+      i:
         $ref: '#/definitions/model.GitHubRepoInfo'
-      repo_url:
-        type: string
+        description: Url  string          `json:"url"`
     type: object
   model.MarkdownEnriched:
     properties:

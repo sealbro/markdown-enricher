@@ -54,7 +54,7 @@ func Build() *dig.Container {
 	})
 	provideOrPanic(container, metrics.MakePrometheusServer)
 	provideOrPanic(container, func() *router.WebServerConfig {
-		return &router.WebServerConfig{Port: env.EnvOrDefault("PORT", "8080"), PathPrefix: "/api"}
+		return &router.WebServerConfig{Port: env.EnvOrDefault("PORT", "8080"), PathPrefix: env.EnvOrDefault("SLUG", "/markdown-enricher")}
 	})
 	provideOrPanic(container, router.MakeEchoWebServer)
 	provideOrPanic(container, MakeApplication)

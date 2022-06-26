@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"markdown-enricher/infrastructure/metrics"
 	"markdown-enricher/pkg/logger"
+	"path"
 )
 
 type WebServer interface {
@@ -39,7 +40,7 @@ func MakeEchoWebServer(config *WebServerConfig, controllers []Controller) WebSer
 	server := &EchoWebServer{
 		echo:      echo.New(),
 		port:      config.Port,
-		apiPrefix: config.PathPrefix,
+		apiPrefix: path.Join(config.PathPrefix, "/api"),
 	}
 
 	// Metrics
