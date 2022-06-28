@@ -9,15 +9,16 @@ job "markdown-enricher" {
   }
 
   update {
-    max_parallel = 1
-    health_check = "checks"
-    min_healthy_time = "30s"
+    max_parallel = 2
+    health_check = "task_states"
+    min_healthy_time = "1m"
     healthy_deadline = "5m"
+    canary = 1
   }
 
   migrate {
-    max_parallel = 1
-    health_check = "checks"
+    max_parallel = 2
+    health_check = "task_states"
     min_healthy_time = "2m"
     healthy_deadline = "5m"
   }
@@ -87,7 +88,7 @@ job "markdown-enricher" {
       driver = "docker"
 
       config {
-        image = "sealbro/markdown-enricher:0.0.4"
+        image = "sealbro/markdown-enricher:0.0.5"
         force_pull = true
 
         ports = ["app-http", "metrics-http"]
@@ -115,7 +116,6 @@ EOH
 
       template {
         data = <<EOH
-LOG_LEVEL=TRACE
 OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger.service.consul
 GITHUB_TOKEN={{with secret "applications/prod/markdown-enricher"}}{{.Data.data.GITHUB_TOKEN}}{{end}}
 EOH

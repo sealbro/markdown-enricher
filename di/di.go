@@ -8,6 +8,7 @@ import (
 	"markdown-enricher/infrastructure/metrics"
 	"markdown-enricher/infrastructure/trace"
 	router "markdown-enricher/infrastructure/web"
+	"markdown-enricher/infrastructure/websocket"
 	"markdown-enricher/pkg/closer"
 	"markdown-enricher/pkg/env"
 	controller "markdown-enricher/usecases/controllers"
@@ -42,6 +43,7 @@ func Build() *dig.Container {
 	provideOrPanic(container, interactors.MakeEnricherInteractor)
 	provideOrPanic(container, jobs.MakeMdFileEnricherJob)
 	// API
+	provideOrPanic(container, websocket.MakeWebSocketProvider)
 	provideOrPanic(container, controller.MakeMarkdownController, dig.Group("controller"))
 	provideOrPanic(container, func(group ControllerGroup) []router.Controller { return group.Controllers })
 	provideOrPanic(container, func() *trace.JaegerConfig {
