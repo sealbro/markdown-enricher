@@ -9,7 +9,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.0.0
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/prometheus/client_golang v1.12.2
-	github.com/prometheus/common v0.35.0
+	github.com/prometheus/common v0.37.0
 	github.com/swaggo/echo-swagger v1.3.3
 	github.com/swaggo/swag v1.8.3
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.1.14
