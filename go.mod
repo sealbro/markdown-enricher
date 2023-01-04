@@ -22,8 +22,8 @@ require (
 	go.uber.org/dig v1.14.1
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2
 	gorm.io/driver/postgres v1.3.7
-	gorm.io/driver/sqlite v1.3.4
-	gorm.io/gorm v1.23.6
+	gorm.io/driver/sqlite v1.4.4
+	gorm.io/gorm v1.24.0
 	gorm.io/plugin/prometheus v0.0.0-20220517015831-ca6bfaf20bf4
 	mvdan.cc/xurls/v2 v2.4.0
 )
@@ -56,7 +56,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mattn/go-sqlite3 v1.14.13 // indirect
+	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
