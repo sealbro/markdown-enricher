@@ -15,10 +15,10 @@ require (
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.1.14
 	github.com/yuin/goldmark v1.4.12
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.32.0
-	go.opentelemetry.io/otel v1.7.0
+	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.7.0
 	go.opentelemetry.io/otel/sdk v1.7.0
-	go.opentelemetry.io/otel/trace v1.7.0
+	go.opentelemetry.io/otel/trace v1.14.0
 	go.uber.org/dig v1.14.1
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2
 	gorm.io/driver/postgres v1.3.7
