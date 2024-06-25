@@ -59,7 +59,7 @@ job "markdown-enricher" {
 
     service {
       name = "markdown-enricher"
-      tags = ["http", "api", "private", "internal"]
+      tags = ["http", "wss", "api", "private", "internal"]
       port = "app-http"
 
       check {
@@ -88,7 +88,7 @@ job "markdown-enricher" {
       driver = "docker"
 
       config {
-        image = "sealbro/markdown-enricher:0.0.5"
+        image = "sealbro/markdown-enricher:0.0.6"
         force_pull = true
 
         ports = ["app-http", "metrics-http"]
